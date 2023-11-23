@@ -16,11 +16,11 @@ The **fcon_meraki_backup.py** script fetches configurations from Cisco Meraki an
 
 	1. Create virtual environment by command:
 	
-		`virtualenv [environment name]`
+		`virtualenv [environment_name]`
 
 	1. Activate virtual environment by commands:
 	
-		`cd [environment name]`
+		`cd [environment_name]`
 		`Scripts\activate`
 
 1. Make sure the computer has network connection and run the command below to install Meraki Dashboard API Python library:
@@ -31,10 +31,10 @@ The **fcon_meraki_backup.py** script fetches configurations from Cisco Meraki an
 
 1. In a Windows command prompt, run:
 
-`py fcon_meraki_backup.py [Meraki_API_key]` 
+	`py fcon_meraki_backup.py [Meraki_API_key]` 
  
 	- `[Meraki_API_key]`
-	The API key to access the Cisco Meraki instance. Please follow the steps in the document [Cisco Meraki Dashboard API](https://documentation.meraki.com/General_Administration/Other_Topics/Cisco_Meraki_Dashboard_API) to generate an API key.
+		The API key to access the Cisco Meraki instance. Please follow the steps in the document [Cisco Meraki Dashboard API](https://documentation.meraki.com/General_Administration/Other_Topics/Cisco_Meraki_Dashboard_API) to generate an API key.
 
 1. The script will fetch the organizations that can be accessed by the API key. Please select the organization you would like to access. If there is only one organization, the script will select it automatically.
 
@@ -55,12 +55,11 @@ The script generates a backup file in JSON format which includes the following c
 
 # Backup Script for Lucent Brick
 
-The **extractConfig.pl** script extracts configurations from Alcatel-Lucent Brick and generates a backup file which can be input to the FortiConverter tool.
+The **extractConfig.pl** script extracts configurations from Alcatel-Lucent Brick which FortiConverter tool requires to do the conversion.
 
 ### Usage
-```
-extractConfig.pl [groupName] [objectType]
-```
+
+Visit the [Admin Guide](https://docs.fortinet.com/document/forticonverter/7.0.2/online-help/126115/saving-the-alcatel-lucent-source-configuration-file) of FortiConverter for an example backup procedure.
 
 #### Prerequisites
 
@@ -72,35 +71,35 @@ extractConfig.pl [groupName] [objectType]
 
 1. Log on to an SMS administrator account that has access to the target group. In a Windows command prompt, run: 
 
-`lsmslogon [admin] [outputDirectory]`
+	`lsmslogon [admin] [output_directory]`
 
 	- `[admin]` 
-	The administrator’s Admin ID
+		The administrator’s Admin ID
 	
-	- `[outputDirectory]`
-	The directory in which the LSMS will store any zone assignment or policy files. This directory is created in the directory in which you installed the LSMS software. To specify a different directory, supply the complete path.
+	- `[output_directory]`
+		The directory in which the LSMS will store any zone assignment or policy files. This directory is created in the directory in which you installed the LSMS software. To specify a different directory, supply the complete path.
 
 1. In the command line, run the script:
 
-`extractConfig.pl [groupName] [objectType]`
+	`extractConfig.pl [group_name] [object_type]`
 
-	- `[groupName]`
+	- `[group_name]`
 	The target group name.
 	
-	- `[objectType]`
-	The object you would like to take backup. It can be the following types:
+	- `[object_type]`
+	The object type you would like to take backup. It can be the following values:
 	
 		- `brick`
-		The config under path `[groupName]/Device/Brick` in the group.
+		The config under path `[group_name]/Device/Brick` in the group.
 	
 		- `brickruleset`
-		The config under path `[groupName]/Device/Brick Zone Rulesets` in the group.
+		The config under path `[group_name]/Device/Brick Zone Rulesets` in the group.
 	
 		- `hostgroup`
-		The config under path `[groupName]/Device/Host Groups` in the group.
+		The config under path `[group_name]/Device/Host Groups` in the group.
 		
 		- `servicegroup`
-		The config under path `[groupName]/Device/Service Groups` in the group.
+		The config under path `[group_name]/Device/Service Groups` in the group.
 	
 		- `all`
 		Take the backup of all kinds of the objects listed above.
@@ -109,7 +108,7 @@ extractConfig.pl [groupName] [objectType]
 
 #### Output
 
-In `[outputDirectory]`, a directory is created for each category, and each object in a category is saved to its own text file. Please compress all the directories into a ZIP file and use the ZIP as the input of FortiConverter.
+In `[output_directory]`, a directory is created for each category, and each object in a category is saved to its own text file. Please compress all the directories into a ZIP file and use the ZIP as the input of FortiConverter.
 
 ### Support
 Fortinet-provided scripts in this and other GitHub projects do not fall under the regular Fortinet technical support scope and are not supported by FortiCare Support Services. For direct issues, please contact `fconvert_feedback@fortinet.com`.
