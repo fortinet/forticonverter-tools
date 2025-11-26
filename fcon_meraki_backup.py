@@ -82,10 +82,36 @@ def select_network(dashboard, organization):
     print("")
     return selected_network
 
-def backup_config(dashboard, organization, network):
+def select_device(dashboard, organization):
+
+    list_devices = dashboard.organizations.getOrganizationInventoryDevices(organization['id'], total_pages='all')
+    print('The following devices are fetched from organization "{0}":'.format(organization['name']))
+    for idx in range(len(list_devices)):
+        device = list_devices[idx]
+        print("{0}.\t{1}: {2}\tModel: {3}".format(idx+1, device['serial'], device['name'], device['model']))
+
+    print("")
+    selected_device = None
+    if len(list_devices) == 1:
+        print('Only one device is fetched. Selecting "{0}" automatically.'.format(list_devices[0]['serial']))
+        selected_device = list_devices[0]
+    else:
+        selected = 0
+        while not (0 < selected <= len(list_devices)):
+            try:
+                selected = int(input("Please select a device({0}~{1}): ".format(1, len(list_devices))))
+            except ValueError:
+                print("Invalid input.")
+        selected_device = list_devices[selected-1]
+
+    print("")
+    return selected_device
+
+def backup_config(dashboard, organization, network, device):
 
     org_id = organization['id']
     net_id = network['id']
+    serial_id = device['serial']
 
     config = {}
     config['organizationName'] = organization['name']
@@ -100,35 +126,47 @@ def backup_config(dashboard, organization, network):
     
     config_success = False
     try:
+        network_config['uplinks'] = dashboard.organizations.getOrganizationUplinksStatuses(org_id)
+        config_success = True
+    except meraki.APIError as api_error:
+        print("An error occurred while retrieving uplinks: " + get_api_error_message(api_error))
+
+    try:
+        network_config['WAN'] = dashboard.appliance.getDeviceApplianceUplinksSettings(serial=serial_id)
+        config_success = True
+    except meraki.APIError as api_error:
+        print("An error occurred while retrieving WAN: " + get_api_error_message(api_error))
+
+    try:
         network_config['ports'] = dashboard.appliance.getNetworkAppliancePorts(networkId=net_id)
         config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving ports: " + get_api_error_message(api_error))
-       
+
     try:
         network_config['vlans'] = dashboard.appliance.getNetworkApplianceVlans(networkId=net_id)
         config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving VLANs: " + get_api_error_message(api_error))
-       
+
     try:
         network_config['l3FirewallRules'] = dashboard.appliance.getNetworkApplianceFirewallL3FirewallRules(networkId=net_id)
         config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving firewall rules: " + get_api_error_message(api_error))
-       
+
     try:
         network_config['oneToOneNat'] = dashboard.appliance.getNetworkApplianceFirewallOneToOneNatRules(networkId=net_id)
         config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving one-to-one NAT rules: " + get_api_error_message(api_error))
-       
+
     try:
         network_config['oneToManyNat'] = dashboard.appliance.getNetworkApplianceFirewallOneToManyNatRules(networkId=net_id)
         config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving many-to-one NAT rules: " + get_api_error_message(api_error))
-       
+
     try:
         network_config['staticRoutes'] = dashboard.appliance.getNetworkApplianceStaticRoutes(networkId=net_id)
         config_success = True
@@ -164,7 +202,8 @@ if __name__ == "__main__":
         dashboard = meraki.DashboardAPI(api_key, print_console = False)
         organization = select_organizations(dashboard)    
         network = select_network(dashboard, organization)
-        config = backup_config(dashboard, organization, network)
+        device = select_device(dashboard, organization)
+        config = backup_config(dashboard, organization, network, device)
         backup_name = "meraki_backup_{0}_{1}_{2}.json".format(organization['name'], network['name'], datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
         with open(backup_name, 'w') as backup_file:
             json.dump(config, backup_file, indent=2)
