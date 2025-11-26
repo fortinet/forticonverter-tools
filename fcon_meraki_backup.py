@@ -1,10 +1,10 @@
-import json, datetime, sys
+import json, datetime, sys, re
 
 def print_python_setup_guide():
 
     print('''Please follow the steps below to install Meraki Dashboard API Python library:
           
-1. Install Python 3.7 or newer on the computer.
+1. Install Python 3.13 or newer on the computer.
 
 2. (Optional) Run Python in a virtual environment:
 
@@ -123,57 +123,57 @@ def backup_config(dashboard, organization, network, device):
     network_config = {}
     network_config['networkName'] = network['name']
     network_config['networkId'] = net_id
-    
-    config_success = False
+
+    api_success = True
     try:
         network_config['uplinks'] = dashboard.organizations.getOrganizationUplinksStatuses(org_id)
-        config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving uplinks: " + get_api_error_message(api_error))
+        api_success = False
 
     try:
         network_config['WAN'] = dashboard.appliance.getDeviceApplianceUplinksSettings(serial=serial_id)
-        config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving WAN: " + get_api_error_message(api_error))
+        api_success = False
 
     try:
         network_config['ports'] = dashboard.appliance.getNetworkAppliancePorts(networkId=net_id)
-        config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving ports: " + get_api_error_message(api_error))
+        api_success = False
 
     try:
         network_config['vlans'] = dashboard.appliance.getNetworkApplianceVlans(networkId=net_id)
-        config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving VLANs: " + get_api_error_message(api_error))
+        api_success = False
 
     try:
         network_config['l3FirewallRules'] = dashboard.appliance.getNetworkApplianceFirewallL3FirewallRules(networkId=net_id)
-        config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving firewall rules: " + get_api_error_message(api_error))
+        api_success = False
 
     try:
         network_config['oneToOneNat'] = dashboard.appliance.getNetworkApplianceFirewallOneToOneNatRules(networkId=net_id)
-        config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving one-to-one NAT rules: " + get_api_error_message(api_error))
+        api_success = False
 
     try:
         network_config['oneToManyNat'] = dashboard.appliance.getNetworkApplianceFirewallOneToManyNatRules(networkId=net_id)
-        config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving many-to-one NAT rules: " + get_api_error_message(api_error))
+        api_success = False
 
     try:
         network_config['staticRoutes'] = dashboard.appliance.getNetworkApplianceStaticRoutes(networkId=net_id)
-        config_success = True
     except meraki.APIError as api_error:
         print("An error occurred while retrieving static routes: " + get_api_error_message(api_error))
+        api_success = False
 
-    if not config_success:
+    if not api_success:
         raise Exception("No config available.")        
 
     config['networks'].append(network_config)
@@ -187,6 +187,13 @@ def get_api_error_message(api_error):
     else:
         return str(api_error.message)
 
+def sanitize_filename(name):
+    """Remove or replace characters that are invalid in filenames."""
+    # Replace invalid characters with underscores
+    sanitized = re.sub(r'[<>:"/\\|?*\x00-\x1F]', '_', name)
+    # Limit length to prevent issues with very long filenames
+    return sanitized[:100]  # Limit to 100 characters
+
 if __name__ == "__main__":
 
     print("Welcome to Meraki config backup tool for FortiConverter.")
@@ -196,7 +203,7 @@ if __name__ == "__main__":
 
         if len(sys.argv) <= 1:
             print_api_guide()
-            exit()
+            sys.exit(1)
 
         api_key = sys.argv[1]
         dashboard = meraki.DashboardAPI(api_key, print_console = False)
@@ -204,15 +211,28 @@ if __name__ == "__main__":
         network = select_network(dashboard, organization)
         device = select_device(dashboard, organization)
         config = backup_config(dashboard, organization, network, device)
-        backup_name = "meraki_backup_{0}_{1}_{2}.json".format(organization['name'], network['name'], datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
-        with open(backup_name, 'w') as backup_file:
-            json.dump(config, backup_file, indent=2)
-        print('Backup config file is saved as "{0}".'.format(backup_name))
 
-    except ImportError:
+        # Apply filename sanitization
+        backup_name = "meraki_backup_{0}_{1}_{2}.json".format(
+            sanitize_filename(organization['name']), 
+            sanitize_filename(network['name']), 
+            datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+
+        try:
+            with open(backup_name, 'w') as backup_file:
+                json.dump(config, backup_file, indent=2)
+            print('Backup config file is saved as "{0}".'.format(backup_name))
+        except IOError as e:
+            print(f"Failed to write backup file: {e}")
+            sys.exit(1)
+
+    except ImportError as e:
         print_python_setup_guide()
+        print(f"\nAdditional error info: {e}")
+        sys.exit(1)
     except meraki.APIError as api_error:    
         print(get_api_error_message(api_error))
+        sys.exit(1)
     except Exception as e:
-        print(e)
-
+        print(f"An unexpected error occurred: {e}")
+        sys.exit(1)
