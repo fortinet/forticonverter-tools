@@ -131,11 +131,12 @@ def backup_config(dashboard, organization, network, device):
         print("An error occurred while retrieving uplinks: " + get_api_error_message(api_error))
         api_success = False
 
-    try:
-        network_config['WAN'] = dashboard.appliance.getDeviceApplianceUplinksSettings(serial=serial_id)
-    except meraki.APIError as api_error:
-        print("An error occurred while retrieving WAN: " + get_api_error_message(api_error))
-        api_success = False
+    if device['model'].startswith("MX"):
+        try:
+            network_config['WAN'] = dashboard.appliance.getDeviceApplianceUplinksSettings(serial=serial_id)
+        except meraki.APIError as api_error:
+            print("An error occurred while retrieving WAN: " + get_api_error_message(api_error))
+            api_success = False
 
     try:
         network_config['ports'] = dashboard.appliance.getNetworkAppliancePorts(networkId=net_id)
